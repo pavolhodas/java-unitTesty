@@ -1,14 +1,25 @@
 package com.example.demo.widget.web;
 
+import com.example.demo.widget.model.Widget;
 import com.example.demo.widget.service.WidgetService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
+import static org.mockito.Mockito.when;
+import static org.assertj.core.internal.bytebuddy.matcher.ElementMatchers.is;
+import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.Mockito.doReturn;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -28,8 +39,23 @@ class WidgetRestControllerTest {
     @DisplayName("GET /widgets success")
     void testGetWidgetsSuccess() throws Exception {
         // Setup our mocked service
+        Widget widget = new Widget(1L, "Widget Name", "Description", 1);
+        Widget widget1 = new Widget(2L, "Widget Name 2", "Description 2", 4);
+        doReturn(Lists.newArrayList(widget, widget1)).when(service).findAll();
 
         // Execute the GET request
+        mockMvc.perform(get("/rest/widgets"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].id", is(1)))
+                .andExpect(jsonPath("$[0].name", is("Widget Name")))
+                .andExpect(jsonPath("$[0].description", is("Description")))
+                .andExpect(jsonPath("$[0].quantity", is(1)))
+                .andExpect(jsonPath("$[1].id", is(2)))
+                .andExpect(jsonPath("$[1].name", is("Widget Name 2")))
+                .andExpect(jsonPath("$[1].description", is("Description 2")))
+                .andExpect(jsonPath("$[1].quantity", is(4)));
     }
 
     @Test
