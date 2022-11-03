@@ -12,13 +12,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import static org.mockito.Mockito.when;
-import static org.assertj.core.internal.bytebuddy.matcher.ElementMatchers.is;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.doReturn;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -39,9 +40,9 @@ class WidgetRestControllerTest {
     @DisplayName("GET /widgets success")
     void testGetWidgetsSuccess() throws Exception {
         // Setup our mocked service
-        Widget widget = new Widget(1L, "Widget Name", "Description", 1);
-        Widget widget1 = new Widget(2L, "Widget Name 2", "Description 2", 4);
-        doReturn(Lists.newArrayList(widget, widget1)).when(service).findAll();
+        Widget widget1 = new Widget(1l, "Widget Name", "Description", 1);
+        Widget widget2 = new Widget(2l, "Widget 2 Name", "Description 2", 4);
+        doReturn(Lists.newArrayList(widget1, widget2)).when(service).findAll();
 
         // Execute the GET request
         mockMvc.perform(get("/rest/widgets"))
@@ -51,20 +52,27 @@ class WidgetRestControllerTest {
                 .andExpect(jsonPath("$[0].id", is(1)))
                 .andExpect(jsonPath("$[0].name", is("Widget Name")))
                 .andExpect(jsonPath("$[0].description", is("Description")))
-                .andExpect(jsonPath("$[0].quantity", is(1)))
+                .andExpect(jsonPath("$[0].version", is(1)))
                 .andExpect(jsonPath("$[1].id", is(2)))
-                .andExpect(jsonPath("$[1].name", is("Widget Name 2")))
+                .andExpect(jsonPath("$[1].name", is("Widget 2 Name")))
                 .andExpect(jsonPath("$[1].description", is("Description 2")))
-                .andExpect(jsonPath("$[1].quantity", is(4)));
+                .andExpect(jsonPath("$[1].version", is(4)));
     }
 
     @Test
     @DisplayName("GET /rest/widget/1")
     void testGetWidgetById() throws Exception {
         // Setup our mocked service (https://spring.io/guides/gs/testing-web/) or (https://howtodoinjava.com/spring-boot2/testing/spring-boot-mockmvc-example/)
-
+        Widget widget = new Widget(1L, "Widget Name", "Description", 1);
         // Execute the GET request
-
+        mockMvc.perform( MockMvcRequestBuilders
+                        .get("/rest/widget/{id}", 1))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.name", is("Widget Name")))
+                .andExpect(jsonPath("$.description", is("Description")))
+                .andExpect(jsonPath("$.version", is(1)));
         // Validate the returned fields
 
     }
@@ -73,9 +81,11 @@ class WidgetRestControllerTest {
     @DisplayName("GET /rest/widget/1 - Not Found")
     void testGetWidgetByIdNotFound() throws Exception {
         // Setup our mocked service (return empty for findbyid)
-
+        doReturn(null).when(service).findById(1L);
         // Execute the GET request
-
+        mockMvc.perform( MockMvcRequestBuilders
+                        .get("/rest/widget/{id}", 1))
+                .andExpect(status().isNotFound());
         // Validate the response code (isNotFound)
 
     }
@@ -84,9 +94,20 @@ class WidgetRestControllerTest {
     @DisplayName("POST /rest/widget")
     void testCreateWidget() throws Exception {
         // Setup our mocked service
+        Widget postWidget = new Widget(1L, "Widget Name", "Description", 1);
 
         // Execute the POST request (using asJsonString method)
-
+        mockMvc.perform( MockMvcRequestBuilders
+                        .post("/rest/widget")
+                        .content(asJsonString(postWidget))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.name", is("Widget Name")))
+                .andExpect(jsonPath("$.description", is("Description")))
+                .andExpect(jsonPath("$.version", is(1)));
     }
 
     @Test
